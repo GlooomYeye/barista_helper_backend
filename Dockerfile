@@ -1,4 +1,4 @@
-FROM openjdk:23-jdk-slim as builder
+FROM openjdk:23-jdk-slim AS builder
 
 WORKDIR /app
 
@@ -13,5 +13,4 @@ RUN ./gradlew clean bootJar
 FROM openjdk:23-jdk-slim
 WORKDIR /app
 COPY --from=builder /app/build/libs/*.jar app.jar
-
 ENTRYPOINT [ "java", "-jar", "app.jar" ]
