@@ -41,6 +41,11 @@ public class RecipeService {
     }
 
     @Transactional(readOnly = true)
+    public Page<RecipeEntity> searchFavoritesByName(Long userId, String searchQuery, Pageable pageable){
+        return recipeRepository.findByLikedByUsers_IdAndNameContainingIgnoreCase(userId, searchQuery, pageable);
+    }
+
+    @Transactional(readOnly = true)
     public Page<RecipeEntity> getAll(Pageable pageable) {
         return recipeRepository.findAll(pageable);
     }

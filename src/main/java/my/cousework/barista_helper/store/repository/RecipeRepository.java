@@ -20,4 +20,6 @@ public interface RecipeRepository extends JpaRepository<RecipeEntity, Long> {
     boolean existsByIdAndAuthor_Id(Long recipeId, Long userId);
 
     boolean existsByIdAndLikedByUsers_Id(Long recipeId, Long userId);
+
+    Page<RecipeEntity> findByLikedByUsers_IdAndNameContainingIgnoreCase(Long userId, String name, Pageable pageable);
 }

@@ -1,11 +1,9 @@
 package my.cousework.barista_helper.api.controllers;
 
-import my.cousework.barista_helper.api.validation.OnUpdateCredentials;
-import my.cousework.barista_helper.api.validation.OnUpdatePassword;
-
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -13,9 +11,10 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
-
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -23,22 +22,18 @@ import org.springframework.web.bind.annotation.RestController;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
-
 import my.cousework.barista_helper.api.dto.RecipeDetailsDto;
 import my.cousework.barista_helper.api.dto.RecipePreviewDto;
 import my.cousework.barista_helper.api.dto.UserDto;
-
 import my.cousework.barista_helper.api.mappers.RecipeMapper;
 import my.cousework.barista_helper.api.mappers.UserMapper;
 import my.cousework.barista_helper.api.services.RecipeService;
 import my.cousework.barista_helper.api.services.UserService;
 import my.cousework.barista_helper.api.validation.OnCreate;
-
+import my.cousework.barista_helper.api.validation.OnUpdateCredentials;
+import my.cousework.barista_helper.api.validation.OnUpdatePassword;
 import my.cousework.barista_helper.store.entities.RecipeEntity;
 import my.cousework.barista_helper.store.entities.UserEntity;
-
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 
 
 
@@ -97,10 +92,21 @@ public class UserController {
     @GetMapping("/{userId}/favorites")
     @PreAuthorize("@customSecurityExpression.canAccessUser(#p0)")
     public Page<RecipePreviewDto> getFavoritesByUserId(@PathVariable("userId") Long userId,
+            @RequestParam(name = "search", required = false) String searchQuery,
             @RequestParam(defaultValue = "1", name = "page") int page,
-            @RequestParam(defaultValue = "10", name = "perPage") int perPage) {
-        Pageable pageable = PageRequest.of(page - 1, perPage);
-        Page<RecipeEntity> recipes = recipeService.getFavoritesByUserId(userId, pageable);
+            @RequestParam(defaultValue = "10", name = "perPage") int perPage,
+            @RequestParam(defaultValue = "id", name = "sortBy") String sortBy,
+            @RequestParam(defaultValue = "asc", name = "sortDir") String sortDir) {
+
+        Sort sort = Sort.by(sortDir.equalsIgnoreCase("desc") ? Sort.Direction.DESC : Sort.Direction.ASC, sortBy);
+
+        Pageable pageable = PageRequest.of(page - 1, perPage, sort);
+        Page<RecipeEntity> recipes;
+        if (searchQuery != null && !searchQuery.isEmpty()) {
+            recipes = recipeService.searchFavoritesByName(userId, searchQuery, pageable);
+        } else {
+            recipes = recipeService.getFavoritesByUserId(userId, pageable);
+        }
         return recipeMapper.toPreviewDto(recipes);
     }
 
@@ -114,10 +120,21 @@ public class UserController {
     @GetMapping("/{userId}/recipes")
     @PreAuthorize("@customSecurityExpression.canAccessUser(#p0)")
     public Page<RecipePreviewDto> getRecipesByUserId(@PathVariable("userId") Long userId,
+            @RequestParam(name = "search", required = false) String searchQuery,
             @RequestParam(defaultValue = "1", name = "page") int page,
-            @RequestParam(defaultValue = "10", name = "perPage") int perPage) {
-        Pageable pageable = PageRequest.of(page - 1, perPage);
-        Page<RecipeEntity> recipes = recipeService.getRecipesByUserId(userId, pageable);
+            @RequestParam(defaultValue = "10", name = "perPage") int perPage,
+            @RequestParam(defaultValue = "id", name = "sortBy") String sortBy,
+            @RequestParam(defaultValue = "asc", name = "sortDir") String sortDir) {
+
+        Sort sort = Sort.by(sortDir.equalsIgnoreCase("desc") ? Sort.Direction.DESC : Sort.Direction.ASC, sortBy);
+        Pageable pageable = PageRequest.of(page - 1, perPage, sort);
+        Page<RecipeEntity> recipes;
+
+        if (searchQuery != null && !searchQuery.isEmpty()) {
+            recipes = recipeService.searchFavoritesByName(userId, searchQuery, pageable);
+        } else {
+            recipes = recipeService.getRecipesByUserId(userId, pageable);
+        }
         return recipeMapper.toPreviewDto(recipes);
     }
 
@@ -178,4 +195,5 @@ public class UserController {
         recipeService.delete(recipeId, userId);
         return ResponseEntity.ok().build();
     }
+
 }
