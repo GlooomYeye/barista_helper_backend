@@ -22,8 +22,10 @@ import org.springframework.web.bind.annotation.RestController;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import my.cousework.barista_helper.api.dto.JwtResponse;
 import my.cousework.barista_helper.api.dto.RecipeDetailsDto;
 import my.cousework.barista_helper.api.dto.RecipePreviewDto;
+import my.cousework.barista_helper.api.dto.UserCredentialsResponse;
 import my.cousework.barista_helper.api.dto.UserDto;
 import my.cousework.barista_helper.api.mappers.RecipeMapper;
 import my.cousework.barista_helper.api.mappers.UserMapper;
@@ -32,6 +34,7 @@ import my.cousework.barista_helper.api.services.UserService;
 import my.cousework.barista_helper.api.validation.OnCreate;
 import my.cousework.barista_helper.api.validation.OnUpdateCredentials;
 import my.cousework.barista_helper.api.validation.OnUpdatePassword;
+import my.cousework.barista_helper.security.JwtTokenProvider;
 import my.cousework.barista_helper.store.entities.RecipeEntity;
 import my.cousework.barista_helper.store.entities.UserEntity;
 
@@ -48,6 +51,7 @@ public class UserController {
     RecipeService recipeService;
     UserMapper userMapper;
     RecipeMapper recipeMapper;
+    JwtTokenProvider jwtTokenProvider;
     
     @GetMapping("/me")
     @CrossOrigin(origins = "*")
@@ -60,11 +64,33 @@ public class UserController {
 
     @PutMapping("/me")
     @PreAuthorize("isAuthenticated()")
-    public UserDto updateCredentials(
+    public UserCredentialsResponse updateCredentials(
                             @Validated(OnUpdateCredentials.class) @RequestBody UserDto dto) {
         UserEntity user = userMapper.toEntity(dto);
         UserEntity updatedUser = userService.updateCredentials(user);
-        return userMapper.toDto(updatedUser);
+        UserDto updatedUserDto = userMapper.toDto(updatedUser);
+        
+        String accessToken = jwtTokenProvider.generateAccessToken(
+            updatedUser.getId(),
+            updatedUser.getEmail(),
+            updatedUser.getRoles()
+        );
+        
+        UserCredentialsResponse response = new UserCredentialsResponse();
+        response.setUser(updatedUserDto);
+        
+        JwtResponse jwtResponse = new JwtResponse();
+        jwtResponse.setId(updatedUser.getId());
+        jwtResponse.setLogin(updatedUser.getEmail());
+        jwtResponse.setAccessToken(accessToken);
+        jwtResponse.setRefreshToken(jwtTokenProvider.generateRefreshToken(
+            updatedUser.getId(),
+            updatedUser.getEmail()
+        ));
+        
+        response.setToken(jwtResponse);
+        
+        return response;
     }
 
     @PutMapping("/me/password")

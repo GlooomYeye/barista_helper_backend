@@ -2,6 +2,7 @@ package my.cousework.barista_helper.security;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -16,7 +17,6 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.annotation.Lazy;
 
 
 @Configuration
@@ -53,7 +53,7 @@ public class SecurityConfig{
                 )
                 .exceptionHandling(configurer ->
                         configurer.authenticationEntryPoint(
-                                        (_, response, _) -> {
+                                        (request, response, authException) -> {
                                             response.setStatus(
                                                     HttpStatus.UNAUTHORIZED
                                                             .value()
@@ -62,7 +62,7 @@ public class SecurityConfig{
                                                     .write("Unauthorized.");
                                         })
                                 .accessDeniedHandler(
-                                        (_, response, _) -> {
+                                        (request, response, accessDeniedException) -> {
                                             response.setStatus(
                                                     HttpStatus.FORBIDDEN
                                                             .value()
